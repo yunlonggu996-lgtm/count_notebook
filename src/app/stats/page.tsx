@@ -4,6 +4,7 @@ import { useEffect, useState, useMemo } from 'react'
 import Header from '@/components/Header'
 import StatsPieChart from '@/components/StatsPieChart'
 import StatsLineChart from '@/components/StatsLineChart'
+import CalendarPicker from '@/components/CalendarPicker'
 import { getCategoryById } from '@/lib/categories'
 import { useUser } from '@/contexts/UserContext'
 import { Calendar } from 'lucide-react'
@@ -24,6 +25,7 @@ export default function StatsPage() {
   const [startDate, setStartDate] = useState(dayjs().startOf('month').format('YYYY-MM-DD'))
   const [endDate, setEndDate] = useState(dayjs().endOf('month').format('YYYY-MM-DD'))
   const [showDatePicker, setShowDatePicker] = useState(false)
+  const [pickStartDate, setPickStartDate] = useState(true)
 
   useEffect(() => {
     if (currentUser) {
@@ -163,23 +165,43 @@ export default function StatsPage() {
               <div>
                 <div className="text-xs text-gray-400 mb-2">自定义区间</div>
                 <div className="flex items-center gap-3">
-                  <div className="flex-1">
-                    <input
-                      type="date"
-                      value={startDate}
-                      onChange={(e) => setStartDate(e.target.value)}
-                      className="w-full p-3 bg-white rounded-xl text-sm text-gray-700 border border-gray-200 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 outline-none transition-all"
-                    />
-                  </div>
+                  <button
+                    onClick={() => setPickStartDate(true)}
+                    className={`flex-1 p-3 bg-white rounded-xl text-sm border transition-all ${
+                      pickStartDate ? 'border-indigo-400 ring-2 ring-indigo-100' : 'border-gray-200 hover:border-indigo-300'
+                    }`}
+                  >
+                    <div className="text-xs text-gray-400">开始日期</div>
+                    <div className="text-gray-700 font-medium">
+                      {startDate ? dayjs(startDate).format('YYYY-MM-DD') : '选择日期'}
+                    </div>
+                  </button>
                   <div className="w-8 h-px bg-gray-300"></div>
-                  <div className="flex-1">
-                    <input
-                      type="date"
-                      value={endDate}
-                      onChange={(e) => setEndDate(e.target.value)}
-                      className="w-full p-3 bg-white rounded-xl text-sm text-gray-700 border border-gray-200 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 outline-none transition-all"
-                    />
-                  </div>
+                  <button
+                    onClick={() => setPickStartDate(false)}
+                    className={`flex-1 p-3 bg-white rounded-xl text-sm border transition-all ${
+                      !pickStartDate ? 'border-indigo-400 ring-2 ring-indigo-100' : 'border-gray-200 hover:border-indigo-300'
+                    }`}
+                  >
+                    <div className="text-xs text-gray-400">结束日期</div>
+                    <div className="text-gray-700 font-medium">
+                      {endDate ? dayjs(endDate).format('YYYY-MM-DD') : '选择日期'}
+                    </div>
+                  </button>
+                </div>
+
+                {/* Custom Calendar Picker */}
+                <div className="mt-3">
+                  <CalendarPicker
+                    value={pickStartDate ? startDate : endDate}
+                    onChange={(date) => {
+                      if (pickStartDate) {
+                        setStartDate(date)
+                      } else {
+                        setEndDate(date)
+                      }
+                    }}
+                  />
                 </div>
               </div>
 
