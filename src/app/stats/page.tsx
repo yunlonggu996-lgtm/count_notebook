@@ -100,68 +100,96 @@ export default function StatsPage() {
 
       <main className="px-4 py-6 max-w-[480px] mx-auto">
         {/* Date Range Selector */}
-        <div className="bg-white p-4 rounded-2xl shadow-sm mb-6">
+        <div className="bg-gradient-to-br from-indigo-50 to-purple-50 p-5 rounded-2xl shadow-sm mb-6 border border-indigo-100">
           <button
             onClick={() => setShowDatePicker(!showDatePicker)}
-            className="w-full flex items-center justify-center gap-2 py-2"
+            className="w-full flex items-center justify-between py-1"
           >
-            <Calendar size={18} className="text-primary" />
-            <span className="font-semibold">{dateRangeText}</span>
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-white rounded-xl shadow-sm flex items-center justify-center">
+                <Calendar size={20} className="text-indigo-500" />
+              </div>
+              <div className="text-left">
+                <div className="text-xs text-gray-400">统计区间</div>
+                <div className="font-bold text-gray-800">{dateRangeText}</div>
+              </div>
+            </div>
+            <div className={`w-8 h-8 rounded-full bg-white shadow-sm flex items-center justify-center transition-transform duration-300 ${showDatePicker ? 'rotate-180' : ''}`}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-gray-400">
+                <polyline points="6 9 12 15 18 9"></polyline>
+              </svg>
+            </div>
           </button>
 
           {/* Date Picker Dropdown */}
           {showDatePicker && (
-            <div className="mt-4 pt-4 border-t border-gray-100 space-y-4">
+            <div className="mt-4 pt-4 border-t border-indigo-100 space-y-4 animate-in slide-in-from-top-2 duration-200">
               {/* Quick Select Buttons */}
-              <div className="grid grid-cols-4 gap-2">
-                <button
-                  onClick={() => handleQuickSelect(7)}
-                  className="py-2 px-3 bg-gray-100 rounded-lg text-sm hover:bg-primary hover:text-white transition-colors"
-                >
-                  近7天
-                </button>
-                <button
-                  onClick={() => handleQuickSelect(30)}
-                  className="py-2 px-3 bg-gray-100 rounded-lg text-sm hover:bg-primary hover:text-white transition-colors"
-                >
-                  近30天
-                </button>
-                <button
-                  onClick={handleThisMonth}
-                  className="py-2 px-3 bg-gray-100 rounded-lg text-sm hover:bg-primary hover:text-white transition-colors"
-                >
-                  本月
-                </button>
-                <button
-                  onClick={handleLastMonth}
-                  className="py-2 px-3 bg-gray-100 rounded-lg text-sm hover:bg-primary hover:text-white transition-colors"
-                >
-                  上月
-                </button>
+              <div>
+                <div className="text-xs text-gray-400 mb-2">快速选择</div>
+                <div className="grid grid-cols-4 gap-2">
+                  {[
+                    { label: '近7天', days: 7 },
+                    { label: '近30天', days: 30 },
+                    { label: '本月', action: 'thisMonth' },
+                    { label: '上月', action: 'lastMonth' },
+                  ].map((item) => {
+                    const isActive =
+                      (item.days && dayjs().diff(dayjs(startDate), 'day') + 1 === item.days && endDate === dayjs().format('YYYY-MM-DD')) ||
+                      (item.action === 'thisMonth' && startDate === dayjs().startOf('month').format('YYYY-MM-DD')) ||
+                      (item.action === 'lastMonth' && startDate === dayjs().subtract(1, 'month').startOf('month').format('YYYY-MM-DD'))
+                    return (
+                      <button
+                        key={item.label}
+                        onClick={() => {
+                          if (item.days) handleQuickSelect(item.days)
+                          else if (item.action === 'thisMonth') handleThisMonth()
+                          else if (item.action === 'lastMonth') handleLastMonth()
+                        }}
+                        className={`py-2.5 px-2 rounded-xl text-sm font-medium transition-all duration-200 ${
+                          isActive
+                            ? 'bg-indigo-500 text-white shadow-md shadow-indigo-200'
+                            : 'bg-white text-gray-600 hover:bg-indigo-50 hover:text-indigo-600'
+                        }`}
+                      >
+                        {item.label}
+                      </button>
+                    )
+                  })}
+                </div>
               </div>
 
               {/* Custom Date Range */}
-              <div className="flex items-center gap-2">
-                <div className="flex-1">
-                  <label className="text-xs text-gray-400 block mb-1">开始日期</label>
-                  <input
-                    type="date"
-                    value={startDate}
-                    onChange={(e) => setStartDate(e.target.value)}
-                    className="w-full p-2 bg-gray-50 rounded-lg text-sm"
-                  />
-                </div>
-                <div className="text-gray-400 pt-4">至</div>
-                <div className="flex-1">
-                  <label className="text-xs text-gray-400 block mb-1">结束日期</label>
-                  <input
-                    type="date"
-                    value={endDate}
-                    onChange={(e) => setEndDate(e.target.value)}
-                    className="w-full p-2 bg-gray-50 rounded-lg text-sm"
-                  />
+              <div>
+                <div className="text-xs text-gray-400 mb-2">自定义区间</div>
+                <div className="flex items-center gap-3">
+                  <div className="flex-1">
+                    <input
+                      type="date"
+                      value={startDate}
+                      onChange={(e) => setStartDate(e.target.value)}
+                      className="w-full p-3 bg-white rounded-xl text-sm text-gray-700 border border-gray-200 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 outline-none transition-all"
+                    />
+                  </div>
+                  <div className="w-8 h-px bg-gray-300"></div>
+                  <div className="flex-1">
+                    <input
+                      type="date"
+                      value={endDate}
+                      onChange={(e) => setEndDate(e.target.value)}
+                      className="w-full p-3 bg-white rounded-xl text-sm text-gray-700 border border-gray-200 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 outline-none transition-all"
+                    />
+                  </div>
                 </div>
               </div>
+
+              {/* Confirm Button */}
+              <button
+                onClick={() => setShowDatePicker(false)}
+                className="w-full py-3 bg-indigo-500 text-white rounded-xl font-medium shadow-md shadow-indigo-200 hover:bg-indigo-600 active:scale-[0.98] transition-all"
+              >
+                确定
+              </button>
             </div>
           )}
         </div>
