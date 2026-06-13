@@ -130,7 +130,7 @@ export default function AddPage() {
         </div>
 
         {/* Note */}
-        <div className="px-4 pb-28">
+        <div className="px-4 pb-32">
           <div className="text-sm text-gray-400 mb-3">备注</div>
           <textarea
             value={note}
@@ -142,7 +142,7 @@ export default function AddPage() {
         </div>
 
         {/* Save Button */}
-        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 w-full max-w-[480px] px-4">
+        <div className="fixed bottom-20 left-1/2 -translate-x-1/2 w-full max-w-[480px] px-4">
           <button
             onClick={handleSave}
             disabled={saving}
