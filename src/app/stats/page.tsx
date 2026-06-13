@@ -5,6 +5,7 @@ import Header from '@/components/Header'
 import StatsPieChart from '@/components/StatsPieChart'
 import StatsLineChart from '@/components/StatsLineChart'
 import { getCategoryById } from '@/lib/categories'
+import { useUser } from '@/contexts/UserContext'
 import dayjs from 'dayjs'
 
 interface StatsData {
@@ -16,16 +17,20 @@ interface StatsData {
 }
 
 export default function StatsPage() {
+  const { currentUser } = useUser()
   const [stats, setStats] = useState<StatsData | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    fetchStats()
-  }, [])
+    if (currentUser) {
+      fetchStats(currentUser.id)
+    }
+  }, [currentUser])
 
-  const fetchStats = async () => {
+  const fetchStats = async (userId: number) => {
+    setLoading(true)
     try {
-      const res = await fetch('/api/transactions/stats')
+      const res = await fetch(`/api/transactions/stats?userId=${userId}`)
       const data = await res.json()
       if (data.success) {
         setStats(data.data)
