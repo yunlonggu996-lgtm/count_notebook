@@ -6,6 +6,7 @@ import StatsPieChart from '@/components/StatsPieChart'
 import StatsLineChart from '@/components/StatsLineChart'
 import { getCategoryById } from '@/lib/categories'
 import { useUser } from '@/contexts/UserContext'
+import { Calendar } from 'lucide-react'
 import dayjs from 'dayjs'
 
 interface StatsData {
@@ -20,17 +21,20 @@ export default function StatsPage() {
   const { currentUser } = useUser()
   const [stats, setStats] = useState<StatsData | null>(null)
   const [loading, setLoading] = useState(true)
+  const [startDate, setStartDate] = useState(dayjs().startOf('month').format('YYYY-MM-DD'))
+  const [endDate, setEndDate] = useState(dayjs().endOf('month').format('YYYY-MM-DD'))
+  const [showDatePicker, setShowDatePicker] = useState(false)
 
   useEffect(() => {
     if (currentUser) {
-      fetchStats(currentUser.id)
+      fetchStats(currentUser.id, startDate, endDate)
     }
-  }, [currentUser])
+  }, [currentUser, startDate, endDate])
 
-  const fetchStats = async (userId: number) => {
+  const fetchStats = async (userId: number, start: string, end: string) => {
     setLoading(true)
     try {
-      const cacheKey = `stats_${userId}_${dayjs().format('YYYY-MM')}`
+      const cacheKey = `stats_${userId}_${start}_${end}`
       const cached = localStorage.getItem(cacheKey)
       
       if (cached) {
@@ -39,7 +43,7 @@ export default function StatsPage() {
       }
 
       // 并行请求最新数据
-      const res = await fetch(`/api/transactions/stats?userId=${userId}`)
+      const res = await fetch(`/api/transactions/stats?userId=${userId}&startDate=${start}&endDate=${end}`)
       const data = await res.json()
       
       if (data.success) {
@@ -67,16 +71,99 @@ export default function StatsPage() {
       }))
   }, [stats])
 
+  const handleQuickSelect = (days: number) => {
+    const end = dayjs().format('YYYY-MM-DD')
+    const start = dayjs().subtract(days - 1, 'day').format('YYYY-MM-DD')
+    setStartDate(start)
+    setEndDate(end)
+    setShowDatePicker(false)
+  }
+
+  const handleThisMonth = () => {
+    setStartDate(dayjs().startOf('month').format('YYYY-MM-DD'))
+    setEndDate(dayjs().endOf('month').format('YYYY-MM-DD'))
+    setShowDatePicker(false)
+  }
+
+  const handleLastMonth = () => {
+    const lastMonth = dayjs().subtract(1, 'month')
+    setStartDate(lastMonth.startOf('month').format('YYYY-MM-DD'))
+    setEndDate(lastMonth.endOf('month').format('YYYY-MM-DD'))
+    setShowDatePicker(false)
+  }
+
+  const dateRangeText = `${dayjs(startDate).format('MM月DD日')} - ${dayjs(endDate).format('MM月DD日')}`
+
   return (
     <div className="min-h-screen">
       <Header title="统计" />
 
       <main className="px-4 py-6 max-w-[480px] mx-auto">
-        {/* Month display */}
-        <div className="text-center mb-6">
-          <h2 className="text-lg font-semibold">
-            {dayjs().format('YYYY年MM月')}
-          </h2>
+        {/* Date Range Selector */}
+        <div className="bg-white p-4 rounded-2xl shadow-sm mb-6">
+          <button
+            onClick={() => setShowDatePicker(!showDatePicker)}
+            className="w-full flex items-center justify-center gap-2 py-2"
+          >
+            <Calendar size={18} className="text-primary" />
+            <span className="font-semibold">{dateRangeText}</span>
+          </button>
+
+          {/* Date Picker Dropdown */}
+          {showDatePicker && (
+            <div className="mt-4 pt-4 border-t border-gray-100 space-y-4">
+              {/* Quick Select Buttons */}
+              <div className="grid grid-cols-4 gap-2">
+                <button
+                  onClick={() => handleQuickSelect(7)}
+                  className="py-2 px-3 bg-gray-100 rounded-lg text-sm hover:bg-primary hover:text-white transition-colors"
+                >
+                  近7天
+                </button>
+                <button
+                  onClick={() => handleQuickSelect(30)}
+                  className="py-2 px-3 bg-gray-100 rounded-lg text-sm hover:bg-primary hover:text-white transition-colors"
+                >
+                  近30天
+                </button>
+                <button
+                  onClick={handleThisMonth}
+                  className="py-2 px-3 bg-gray-100 rounded-lg text-sm hover:bg-primary hover:text-white transition-colors"
+                >
+                  本月
+                </button>
+                <button
+                  onClick={handleLastMonth}
+                  className="py-2 px-3 bg-gray-100 rounded-lg text-sm hover:bg-primary hover:text-white transition-colors"
+                >
+                  上月
+                </button>
+              </div>
+
+              {/* Custom Date Range */}
+              <div className="flex items-center gap-2">
+                <div className="flex-1">
+                  <label className="text-xs text-gray-400 block mb-1">开始日期</label>
+                  <input
+                    type="date"
+                    value={startDate}
+                    onChange={(e) => setStartDate(e.target.value)}
+                    className="w-full p-2 bg-gray-50 rounded-lg text-sm"
+                  />
+                </div>
+                <div className="text-gray-400 pt-4">至</div>
+                <div className="flex-1">
+                  <label className="text-xs text-gray-400 block mb-1">结束日期</label>
+                  <input
+                    type="date"
+                    value={endDate}
+                    onChange={(e) => setEndDate(e.target.value)}
+                    className="w-full p-2 bg-gray-50 rounded-lg text-sm"
+                  />
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Summary Cards */}

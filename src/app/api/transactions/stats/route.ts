@@ -7,11 +7,22 @@ export async function GET(request: NextRequest) {
   try {
     const supabase = createClient()
     const searchParams = request.nextUrl.searchParams
-    const month = searchParams.get('month') || dayjs().format('YYYY-MM')
     const userId = parseInt(searchParams.get('userId') || '1')
-
-    const startDate = `${month}-01`
-    const endDate = dayjs(startDate).endOf('month').format('YYYY-MM-DD')
+    
+    // 支持两种参数：month 或 startDate/endDate
+    const month = searchParams.get('month')
+    let startDate: string
+    let endDate: string
+    
+    if (month) {
+      // 按月查询
+      startDate = `${month}-01`
+      endDate = dayjs(startDate).endOf('month').format('YYYY-MM-DD')
+    } else {
+      // 按区间查询
+      startDate = searchParams.get('startDate') || dayjs().startOf('month').format('YYYY-MM-DD')
+      endDate = searchParams.get('endDate') || dayjs().endOf('month').format('YYYY-MM-DD')
+    }
 
     const { data, error } = await supabase
       .from('transactions')
@@ -45,20 +56,23 @@ export async function GET(request: NextRequest) {
         categoryBreakdown[t.category] = (categoryBreakdown[t.category] || 0) + parseFloat(t.amount)
       })
 
-    // Last 7 days trend
-    const last7Days: Record<string, number> = {}
-    for (let i = 6; i >= 0; i--) {
-      const date = dayjs().subtract(i, 'day').format('YYYY-MM-DD')
-      last7Days[date] = 0
+    // Last 7 days trend (or based on actual date range)
+    const days = dayjs(endDate).diff(dayjs(startDate), 'day') + 1
+    const trendDays = Math.min(days, 7) // 最多显示7天
+    
+    const trend: Record<string, number> = {}
+    for (let i = trendDays - 1; i >= 0; i--) {
+      const date = dayjs(endDate).subtract(i, 'day').format('YYYY-MM-DD')
+      trend[date] = 0
     }
 
     data
-      .filter((t: any) => t.type === 'expense' && last7Days[t.date] !== undefined)
+      .filter((t: any) => t.type === 'expense' && trend[t.date] !== undefined)
       .forEach((t: any) => {
-        last7Days[t.date] += parseFloat(t.amount)
+        trend[t.date] += parseFloat(t.amount)
       })
 
-    const trend = Object.entries(last7Days).map(([date, amount]) => ({
+    const trendData = Object.entries(trend).map(([date, amount]) => ({
       date: dayjs(date).format('MM-DD'),
       amount,
     }))
@@ -70,7 +84,7 @@ export async function GET(request: NextRequest) {
         expense,
         balance: income - expense,
         categoryBreakdown,
-        trend,
+        trend: trendData,
       },
     })
   } catch (error) {

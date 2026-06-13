@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { Plus } from 'lucide-react'
+import { Plus, ChevronLeft, ChevronRight } from 'lucide-react'
 import Header from '@/components/Header'
 import TransactionItem from '@/components/TransactionItem'
 import { useUser } from '@/contexts/UserContext'
@@ -28,20 +28,24 @@ export default function HomePage() {
   const [transactions, setTransactions] = useState<Transaction[]>([])
   const [stats, setStats] = useState<Stats>({ income: 0, expense: 0, balance: 0 })
   const [loading, setLoading] = useState(true)
+  const [currentMonth, setCurrentMonth] = useState(dayjs().format('YYYY-MM'))
 
   useEffect(() => {
     if (currentUser) {
-      fetchData(currentUser.id)
+      fetchData(currentUser.id, currentMonth)
     }
-  }, [currentUser])
+  }, [currentUser, currentMonth])
 
-  const fetchData = async (userId: number) => {
+  const fetchData = async (userId: number, month: string) => {
     setLoading(true)
     try {
+      const startDate = `${month}-01`
+      const endDate = dayjs(startDate).endOf('month').format('YYYY-MM-DD')
+      
       // 并行请求，提高加载速度
       const [transRes, statsRes] = await Promise.all([
-        fetch(`/api/transactions?userId=${userId}`),
-        fetch(`/api/transactions/stats?userId=${userId}`)
+        fetch(`/api/transactions?userId=${userId}&startDate=${startDate}&endDate=${endDate}`),
+        fetch(`/api/transactions/stats?userId=${userId}&month=${month}`)
       ])
 
       const [transData, statsData] = await Promise.all([
@@ -70,11 +74,19 @@ export default function HomePage() {
       })
       const data = await res.json()
       if (data.success && currentUser) {
-        fetchData(currentUser.id)
+        fetchData(currentUser.id, currentMonth)
       }
     } catch (error) {
       console.error('Failed to delete transaction:', error)
     }
+  }
+
+  const handlePrevMonth = () => {
+    setCurrentMonth(dayjs(currentMonth).subtract(1, 'month').format('YYYY-MM'))
+  }
+
+  const handleNextMonth = () => {
+    setCurrentMonth(dayjs(currentMonth).add(1, 'month').format('YYYY-MM'))
   }
 
   return (
@@ -106,9 +118,23 @@ export default function HomePage() {
 
         {/* Month selector */}
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold">
-            {dayjs().format('YYYY年MM月')}
-          </h2>
+          <div className="flex items-center gap-2">
+            <button 
+              onClick={handlePrevMonth}
+              className="p-1 hover:bg-gray-100 rounded-lg transition-colors"
+            >
+              <ChevronLeft size={20} className="text-gray-400" />
+            </button>
+            <h2 className="text-lg font-semibold">
+              {dayjs(currentMonth).format('YYYY年MM月')}
+            </h2>
+            <button 
+              onClick={handleNextMonth}
+              className="p-1 hover:bg-gray-100 rounded-lg transition-colors"
+            >
+              <ChevronRight size={20} className="text-gray-400" />
+            </button>
+          </div>
           <Link
             href="/add"
             className="flex items-center gap-1 text-primary text-sm font-medium"
