@@ -36,17 +36,23 @@ export default function HomePage() {
   }, [currentUser])
 
   const fetchData = async (userId: number) => {
+    setLoading(true)
     try {
-      // Fetch transactions
-      const transRes = await fetch(`/api/transactions?userId=${userId}`)
-      const transData = await transRes.json()
+      // 并行请求，提高加载速度
+      const [transRes, statsRes] = await Promise.all([
+        fetch(`/api/transactions?userId=${userId}`),
+        fetch(`/api/transactions/stats?userId=${userId}`)
+      ])
+
+      const [transData, statsData] = await Promise.all([
+        transRes.json(),
+        statsRes.json()
+      ])
+
       if (transData.success) {
         setTransactions(transData.data.slice(0, 10))
       }
 
-      // Fetch stats
-      const statsRes = await fetch(`/api/transactions/stats?userId=${userId}`)
-      const statsData = await statsRes.json()
       if (statsData.success) {
         setStats(statsData.data)
       }
