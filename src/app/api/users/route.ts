@@ -28,23 +28,27 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// PUT /api/users - 更新用户名
+// PUT /api/users - 更新用户信息
 export async function PUT(request: NextRequest) {
   try {
     const supabase = createClient()
     const body = await request.json()
-    const { id, name } = body
+    const { id, name, avatar_url } = body
 
-    if (!id || !name) {
+    if (!id) {
       return NextResponse.json(
         { success: false, error: 'Missing required fields' },
         { status: 400 }
       )
     }
 
+    const updateData: any = { updated_at: new Date().toISOString() }
+    if (name !== undefined) updateData.name = name
+    if (avatar_url !== undefined) updateData.avatar_url = avatar_url
+
     const { data, error } = await supabase
       .from('users')
-      .update({ name, updated_at: new Date().toISOString() })
+      .update(updateData)
       .eq('id', id)
       .select()
       .single()
