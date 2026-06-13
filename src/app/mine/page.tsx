@@ -1,67 +1,35 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import Header from '@/components/Header'
-import { User, LogOut, Info, Edit2, Check, X, ChevronDown, Plus } from 'lucide-react'
-
-interface UserProfile {
-  id: number
-  name: string
-  color: string
-}
-
-const defaultUsers: UserProfile[] = [
-  { id: 1, name: '用户1', color: '#4F46E5' },
-  { id: 2, name: '用户2', color: '#10B981' },
-  { id: 3, name: '用户3', color: '#F59E0B' },
-  { id: 4, name: '用户4', color: '#EF4444' },
-  { id: 5, name: '用户5', color: '#8B5CF6' },
-]
+import { useUser } from '@/contexts/UserContext'
+import { User, LogOut, Info, Edit2, Check, X, ChevronDown } from 'lucide-react'
 
 export default function MinePage() {
-  const [users, setUsers] = useState<UserProfile[]>(() => {
-    const saved = localStorage.getItem('users')
-    return saved ? JSON.parse(saved) : defaultUsers
-  })
-  
-  const [currentUserId, setCurrentUserId] = useState(() => {
-    const saved = localStorage.getItem('currentUserId')
-    return saved ? parseInt(saved) : 1
-  })
-  
+  const { users, currentUser, setCurrentUser, updateUserName } = useUser()
   const [showUserList, setShowUserList] = useState(false)
   const [editingUserId, setEditingUserId] = useState<number | null>(null)
   const [editingName, setEditingName] = useState('')
 
-  const currentUser = users.find(u => u.id === currentUserId)
-
-  useEffect(() => {
-    localStorage.setItem('users', JSON.stringify(users))
-  }, [users])
-
-  useEffect(() => {
-    localStorage.setItem('currentUserId', currentUserId.toString())
-  }, [currentUserId])
-
-  const handleSelectUser = (userId: number) => {
-    setCurrentUserId(userId)
-    setShowUserList(false)
+  const handleSelectUser = (user: typeof currentUser) => {
+    if (user) {
+      setCurrentUser(user)
+      setShowUserList(false)
+    }
   }
 
-  const handleStartEdit = (user: UserProfile) => {
-    setEditingUserId(user.id)
-    setEditingName(user.name)
+  const handleStartEdit = (userId: number, name: string) => {
+    setEditingUserId(userId)
+    setEditingName(name)
     setShowUserList(false)
   }
 
   const handleSaveName = () => {
     if (editingUserId && editingName.trim()) {
-      setUsers(users.map(u => 
-        u.id === editingUserId ? { ...u, name: editingName.trim() } : u
-      ))
+      updateUserName(editingUserId, editingName.trim())
+      setEditingUserId(null)
+      setEditingName('')
     }
-    setEditingUserId(null)
-    setEditingName('')
   }
 
   const handleCancelEdit = () => {
@@ -88,7 +56,7 @@ export default function MinePage() {
                 <User size={32} style={{ color: currentUser?.color }} />
               </div>
               <div className="ml-4">
-                {editingUserId === currentUserId ? (
+                {editingUserId === currentUser?.id ? (
                   <div className="flex items-center">
                     <input
                       type="text"
@@ -126,16 +94,16 @@ export default function MinePage() {
           </button>
 
           {/* User List Dropdown */}
-          {showUserList && (
+          {showUserList && users.length > 0 && (
             <div className="mt-4 pt-4 border-t border-gray-100">
               <div className="text-sm text-gray-400 mb-3">选择用户</div>
               <div className="grid grid-cols-5 gap-3">
                 {users.map((user) => (
                   <button
                     key={user.id}
-                    onClick={() => handleSelectUser(user.id)}
+                    onClick={() => handleSelectUser(user)}
                     className={`flex flex-col items-center p-3 rounded-xl transition-all ${
-                      currentUserId === user.id
+                      currentUser?.id === user.id
                         ? 'ring-2 ring-primary bg-gray-50'
                         : 'bg-gray-50 hover:bg-gray-100'
                     }`}
@@ -155,36 +123,38 @@ export default function MinePage() {
         </div>
 
         {/* Edit User Names */}
-        <div className="bg-white p-6 rounded-2xl shadow-sm mb-6">
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-sm font-medium">编辑用户名</span>
-            <Edit2 size={16} className="text-gray-400" />
-          </div>
-          <div className="space-y-2">
-            {users.map((user) => (
-              <div 
-                key={user.id} 
-                className="flex items-center justify-between p-2 rounded-lg hover:bg-gray-50 transition-colors"
-              >
-                <div className="flex items-center">
-                  <div 
-                    className="w-8 h-8 rounded-full flex items-center justify-center mr-3"
-                    style={{ backgroundColor: `${user.color}20` }}
-                  >
-                    <User size={16} style={{ color: user.color }} />
-                  </div>
-                  <span className="text-sm text-gray-600">{user.name}</span>
-                </div>
-                <button
-                  onClick={() => handleStartEdit(user)}
-                  className="text-primary text-sm hover:text-indigo-700"
+        {users.length > 0 && (
+          <div className="bg-white p-6 rounded-2xl shadow-sm mb-6">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-sm font-medium">编辑用户名</span>
+              <Edit2 size={16} className="text-gray-400" />
+            </div>
+            <div className="space-y-2">
+              {users.map((user) => (
+                <div 
+                  key={user.id} 
+                  className="flex items-center justify-between p-2 rounded-lg hover:bg-gray-50 transition-colors"
                 >
-                  编辑
-                </button>
-              </div>
-            ))}
+                  <div className="flex items-center">
+                    <div 
+                      className="w-8 h-8 rounded-full flex items-center justify-center mr-3"
+                      style={{ backgroundColor: `${user.color}20` }}
+                    >
+                      <User size={16} style={{ color: user.color }} />
+                    </div>
+                    <span className="text-sm text-gray-600">{user.name}</span>
+                  </div>
+                  <button
+                    onClick={() => handleStartEdit(user.id, user.name)}
+                    className="text-primary text-sm hover:text-indigo-700"
+                  >
+                    编辑
+                  </button>
+                </div>
+              ))}
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Menu Items */}
         <div className="bg-white rounded-2xl shadow-sm overflow-hidden">

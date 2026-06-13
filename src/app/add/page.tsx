@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import Header from '@/components/Header'
 import AmountInput from '@/components/AmountInput'
 import CategoryIcon from '@/components/CategoryIcon'
+import { useUser } from '@/contexts/UserContext'
 import { categories } from '@/lib/categories'
 import dayjs from 'dayjs'
 
@@ -12,6 +13,7 @@ type TransactionType = 'expense' | 'income'
 
 export default function AddPage() {
   const router = useRouter()
+  const { currentUser } = useUser()
   const [type, setType] = useState<TransactionType>('expense')
   const [amount, setAmount] = useState('')
   const [category, setCategory] = useState('')
@@ -45,6 +47,7 @@ export default function AddPage() {
           category,
           date,
           note,
+          userId: currentUser?.id || 1,
         }),
       })
 

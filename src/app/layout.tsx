@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import './globals.css'
 import TabBar from '@/components/TabBar'
+import { UserProvider } from '@/contexts/UserContext'
 
 export const metadata: Metadata = {
   title: '记账本',
@@ -15,10 +16,12 @@ export default function RootLayout({
   return (
     <html lang="zh-CN">
       <body>
-        <div className="min-h-screen pb-20">
-          {children}
-        </div>
-        <TabBar />
+        <UserProvider>
+          <div className="min-h-screen pb-20">
+            {children}
+          </div>
+          <TabBar />
+        </UserProvider>
       </body>
     </html>
   )

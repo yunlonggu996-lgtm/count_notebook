@@ -9,10 +9,12 @@ export async function GET(request: NextRequest) {
     const type = searchParams.get('type')
     const startDate = searchParams.get('startDate')
     const endDate = searchParams.get('endDate')
+    const userId = parseInt(searchParams.get('userId') || '1')
 
     let query = supabase
       .from('transactions')
       .select('*')
+      .eq('user_id', userId)
       .order('date', { ascending: false })
 
     if (type) {
@@ -48,7 +50,7 @@ export async function POST(request: NextRequest) {
   try {
     const supabase = createClient()
     const body = await request.json()
-    const { type, amount, category, date, note } = body
+    const { type, amount, category, date, note, userId = 1 } = body
 
     if (!type || !amount || !category || !date) {
       return NextResponse.json(
@@ -65,6 +67,7 @@ export async function POST(request: NextRequest) {
         category,
         date,
         note: note || '',
+        user_id: userId,
       })
       .select()
       .single()

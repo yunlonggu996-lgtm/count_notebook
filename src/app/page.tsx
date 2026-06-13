@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { Plus } from 'lucide-react'
 import Header from '@/components/Header'
 import TransactionItem from '@/components/TransactionItem'
+import { useUser } from '@/contexts/UserContext'
 import dayjs from 'dayjs'
 
 interface Transaction {
@@ -23,25 +24,28 @@ interface Stats {
 }
 
 export default function HomePage() {
+  const { currentUser } = useUser()
   const [transactions, setTransactions] = useState<Transaction[]>([])
   const [stats, setStats] = useState<Stats>({ income: 0, expense: 0, balance: 0 })
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    fetchData()
-  }, [])
+    if (currentUser) {
+      fetchData(currentUser.id)
+    }
+  }, [currentUser])
 
-  const fetchData = async () => {
+  const fetchData = async (userId: number) => {
     try {
       // Fetch transactions
-      const transRes = await fetch('/api/transactions')
+      const transRes = await fetch(`/api/transactions?userId=${userId}`)
       const transData = await transRes.json()
       if (transData.success) {
         setTransactions(transData.data.slice(0, 10))
       }
 
       // Fetch stats
-      const statsRes = await fetch('/api/transactions/stats')
+      const statsRes = await fetch(`/api/transactions/stats?userId=${userId}`)
       const statsData = await statsRes.json()
       if (statsData.success) {
         setStats(statsData.data)

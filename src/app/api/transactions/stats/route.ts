@@ -8,6 +8,7 @@ export async function GET(request: NextRequest) {
     const supabase = createClient()
     const searchParams = request.nextUrl.searchParams
     const month = searchParams.get('month') || dayjs().format('YYYY-MM')
+    const userId = parseInt(searchParams.get('userId') || '1')
 
     const startDate = `${month}-01`
     const endDate = dayjs(startDate).endOf('month').format('YYYY-MM-DD')
@@ -15,6 +16,7 @@ export async function GET(request: NextRequest) {
     const { data, error } = await supabase
       .from('transactions')
       .select('*')
+      .eq('user_id', userId)
       .gte('date', startDate)
       .lte('date', endDate)
 
