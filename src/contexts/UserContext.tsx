@@ -6,13 +6,15 @@ export interface User {
   id: number
   name: string
   color: string
+  avatar_url?: string
 }
 
 interface UserContextType {
   users: User[]
   currentUser: User | null
   setCurrentUser: (user: User) => void
-  updateUserName: (userId: number, name: string) => void
+  updateUser: (userId: number, data: { name?: string; avatar_url?: string }) => void
+  loading: boolean
 }
 
 const UserContext = createContext<UserContextType | null>(null)
@@ -20,22 +22,31 @@ const UserContext = createContext<UserContextType | null>(null)
 export function UserProvider({ children }: { children: ReactNode }) {
   const [users, setUsers] = useState<User[]>([])
   const [currentUserId, setCurrentUserId] = useState<number>(1)
+  const [loading, setLoading] = useState(true)
 
   // 从数据库加载用户列表
   useEffect(() => {
-    const loadUsers = async () => {
-      try {
-        const res = await fetch('/api/users')
-        const data = await res.json()
-        if (data.success) {
-          setUsers(data.data)
-        }
-      } catch (error) {
-        console.error('Failed to load users:', error)
-      }
-    }
     loadUsers()
   }, [])
+
+  const loadUsers = async () => {
+    try {
+      const res = await fetch('/api/users')
+      const data = await res.json()
+      if (data.success) {
+        setUsers(data.data)
+        // 从 localStorage 恢复当前用户
+        const savedUserId = localStorage.getItem('currentUserId')
+        if (savedUserId && data.data.some((u: User) => u.id === parseInt(savedUserId))) {
+          setCurrentUserId(parseInt(savedUserId))
+        }
+      }
+    } catch (error) {
+      console.error('Failed to load users:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
 
   const currentUser = users.find(u => u.id === currentUserId) || null
 
@@ -44,26 +55,26 @@ export function UserProvider({ children }: { children: ReactNode }) {
     localStorage.setItem('currentUserId', user.id.toString())
   }
 
-  const updateUserName = async (userId: number, name: string) => {
+  const updateUser = async (userId: number, updateData: { name?: string; avatar_url?: string }) => {
     try {
       const res = await fetch('/api/users', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: userId, name }),
+        body: JSON.stringify({ id: userId, ...updateData }),
       })
       const data = await res.json()
       if (data.success) {
         setUsers(users.map(u => 
-          u.id === userId ? { ...u, name } : u
+          u.id === userId ? { ...u, ...updateData } : u
         ))
       }
     } catch (error) {
-      console.error('Failed to update user name:', error)
+      console.error('Failed to update user:', error)
     }
   }
 
   return (
-    <UserContext.Provider value={{ users, currentUser, setCurrentUser, updateUserName }}>
+    <UserContext.Provider value={{ users, currentUser, setCurrentUser, updateUser, loading }}>
       {children}
     </UserContext.Provider>
   )
