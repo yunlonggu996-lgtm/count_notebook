@@ -57,6 +57,20 @@ export default function HomePage() {
     }
   }
 
+  const handleDelete = async (id: number) => {
+    try {
+      const res = await fetch(`/api/transactions/${id}`, {
+        method: 'DELETE',
+      })
+      const data = await res.json()
+      if (data.success && currentUser) {
+        fetchData(currentUser.id)
+      }
+    } catch (error) {
+      console.error('Failed to delete transaction:', error)
+    }
+  }
+
   return (
     <div className="min-h-screen">
       <Header title="记账本" />
@@ -110,7 +124,7 @@ export default function HomePage() {
             </div>
           ) : (
             transactions.map((trans) => (
-              <TransactionItem key={trans.id} transaction={trans} />
+              <TransactionItem key={trans.id} transaction={trans} onDelete={handleDelete} />
             ))
           )}
         </div>
